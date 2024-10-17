@@ -21,31 +21,54 @@ const processTextractHandler = async (req, res) => {
     const result = await processTextract(s3Key);
     const openAIResponse = await structureDataWithOpenAI(result, userId);
 
-    // Send the structured data to the frontend using the webhook
-    await fetch(webhookUrl, {
+    const webhookPayload = {
+      success: true,
+      message: "Textract and OpenAI processing successful",
+      data: openAIResponse,
+      userId: userId,
+    };
+
+    const webhookResponse = await fetch(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        success: true,
-        message: "Textract and OpenAI processing successful",
-        data: openAIResponse, // Send the structured data to the webhook
-        userId: userId,
-      }),
+      body: JSON.stringify(webhookPayload),
     });
-    if (webhookResponse.ok) {
-      console.log("Webhook POST request successful:", webhookResponse.status);
-    } else {
+
+    if (!webhookResponse.ok) {
+      const errorText = await webhookResponse.text();
       console.error(
-        "Webhook POST request failed with status:",
-        webhookResponse.status
+        `Webhook POST request failed with status: ${webhookResponse.status}`
       );
-      console.error(await webhookResponse.text()); // Log any response text for debugging
+      console.error("Error response:", errorText);
+      // You might want to handle this error case specifically
+      return;
     }
+
+    console.log("Webhook POST request successful:", webhookResponse.status);
   } catch (error) {
-    console.error(error);
-    // Optionally handle the error in the webhook as well
+    console.error("Error during processing:", error);
+
+    // Attempt to notify via webhook about the failure if webhookUrl exists
+    if (req.body?.webhookUrl) {
+      try {
+        await fetch(req.body.webhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            success: false,
+            message: "Processing failed",
+            error: error.message,
+            userId: req.body.userId,
+          }),
+        });
+      } catch (webhookError) {
+        console.error("Failed to send error webhook:", webhookError);
+      }
+    }
   }
 };
 

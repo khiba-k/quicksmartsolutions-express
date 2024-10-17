@@ -73,7 +73,6 @@ export default async function structureDataWithOpenAI(payload, userId) {
 
     // Process raw text with OpenAI
     const rawText = payload;
-    console.log("Raw Text:", rawText);
     const openAIResponse = await getOpenAIStructuredData(rawText);
 
     // Clean and parse the response
