@@ -31,9 +31,18 @@ const processTextractHandler = async (req, res) => {
         success: true,
         message: "Textract and OpenAI processing successful",
         data: openAIResponse, // Send the structured data to the webhook
-        userId: userId, 
+        userId: userId,
       }),
     });
+    if (webhookResponse.ok) {
+      console.log("Webhook POST request successful:", webhookResponse.status);
+    } else {
+      console.error(
+        "Webhook POST request failed with status:",
+        webhookResponse.status
+      );
+      console.error(await webhookResponse.text()); // Log any response text for debugging
+    }
   } catch (error) {
     console.error(error);
     // Optionally handle the error in the webhook as well
