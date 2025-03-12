@@ -42,7 +42,6 @@ const processTextractHandler = async (req, res) => {
         `Webhook POST request failed with status: ${webhookResponse.status}`
       );
       console.error("Error response:", errorText);
-      // You might want to handle this error case specifically
       return;
     }
 
